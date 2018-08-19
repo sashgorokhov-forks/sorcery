@@ -3,11 +3,13 @@ import sqlite3
 import unittest
 from io import StringIO
 
+import pytest
 from littleutils import SimpleNamespace
 
 import sorcery as spells
 from sorcery import unpack_keys, unpack_attrs, print_args, magic_kwargs, maybe, args_with_source
 from sorcery.core import resolve_var
+from sorcery.spells import extract_parameters
 
 
 class MyListWrapper(object):
@@ -289,5 +291,20 @@ x -
             }])
 
 
+@pytest.mark.parametrize(['signature_spec', 'args', 'kwargs', 'expected'], [
+    ['*args', (1, 2, 3), None, {'args': (1, 2, 3)}],
+    ['bar, *args', (1, 2, 3), None, {'bar': 1, 'args': (2, 3)}],
+    ['*args, **kwargs', (1, 2, 3), {'args': 'what'}, {'args': 'what'}],
+    ['baz, bar', (1, 2), None, {'baz': 1, 'bar': 2}],
+    ['bar, baz="baz"', (1,), None, {'bar': 1, 'baz': 'baz'}],
+    ['**kwargs', None, {'bar': 'bar', 'baz': 'baz'}, {'bar': 'bar', 'baz': 'baz'}],
+])
+def test_extract_parameters(signature_spec, args, kwargs, expected):
+    args = args or tuple()
+    kwargs = kwargs or {}
+    funcdef = exec('def foo(%s): return extract_parameters()' % signature_spec, globals(), locals())
+    assert locals()['foo'](*args, **kwargs) == expected
+
+
 if __name__ == '__main__':
-    unittest.main()
+    pytest.main()

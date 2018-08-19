@@ -1,6 +1,7 @@
 from __future__ import generator_stop
 
 import ast
+import inspect
 import operator
 from functools import lru_cache
 from inspect import signature
@@ -658,3 +659,25 @@ def _switcher(cases, f_code):
 
 
 wrap_module(__name__, globals())
+
+
+def extract_parameters(deep=1):
+    current_frame = inspect.currentframe()
+    frame = inspect.getouterframes(current_frame)[deep].frame
+    arginfo = inspect.getargvalues(frame)
+
+    argvalues = dict()
+
+    for arg in arginfo.args:
+        if arg in arginfo.locals:
+            if arginfo.keywords and arg == arginfo.keywords:
+                continue
+            argvalues[arg] = arginfo.locals[arg]
+
+    if arginfo.varargs and arginfo.varargs in arginfo.locals:
+        argvalues[arginfo.varargs] = arginfo.locals[arginfo.varargs]
+
+    if arginfo.keywords and arginfo.keywords in arginfo.locals:
+        argvalues.update(arginfo.locals[arginfo.keywords])
+
+    return argvalues
